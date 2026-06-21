@@ -4,7 +4,7 @@ import useFetch from "../hooks/use-fetch";
 import { useEffect } from "react";
 import { useState } from "react";
 import { BarLoader } from "react-spinners";
-import JobCard from "../components/ui/JobCard";
+import JobCard from "../components/JobCard";
 
 const JobListing = () => {
   const [searchQuery, setSearchQuery] = useState("");
