@@ -42,7 +42,7 @@ const JobCard = ({
     if (savedJob !== undefined) setSaved(savedJob?.length > 0);
   }, []);
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader>
         <CardTitle className="flex justify-between font-bold">
           {job.title}
