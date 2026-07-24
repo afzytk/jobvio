@@ -59,11 +59,24 @@ const LandingPage = () => {
           </CardContent>
         </Card>
 
-        <Accordion type="single" collapsible className="w-full md:col-span-2">
+        <Accordion
+          multiple
+          type="single"
+          collapsible
+          className="w-full md:col-span-2 mt-16"
+        >
           {faqs.map((faq, index) => (
-            <AccordionItem key={index} value={`item-${index + 1}`}>
-              <AccordionTrigger>{faq.question}</AccordionTrigger>
-              <AccordionContent>{faq.answer}</AccordionContent>
+            <AccordionItem
+              key={index}
+              value={`item-${index + 1}`}
+              className="border-none"
+            >
+              <AccordionTrigger className="text-md sm:text-xl font-normal">
+                {faq.question}
+              </AccordionTrigger>
+              <AccordionContent className="text-base sm:text-lg text-gray-300">
+                {faq.answer}
+              </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
