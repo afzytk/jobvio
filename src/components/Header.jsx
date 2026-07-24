@@ -8,13 +8,14 @@ import {
   UserButton,
   useUser,
 } from "@clerk/clerk-react";
-import { BriefcaseBusiness, Heart, PenBox } from "lucide-react";
+import { Briefcase, BriefcaseBusiness, Heart, PenBox } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const Header = () => {
   const [showSignIn, setShowSignIn] = useState(false);
   const [search, setSearch] = useSearchParams();
   const { user } = useUser();
+  const role = user?.unsafeMetadata?.role;
 
   useEffect(() => {
     if (search.get("sign-in")) {
@@ -60,6 +61,21 @@ const Header = () => {
                 },
               }}
             >
+              <UserButton.UserProfilePage
+                label="Account Role"
+                url="account-role"
+                labelIcon={<Briefcase size={15} />}
+              >
+                <div className="p-6">
+                  <h1 className="text-xl font-bold mb-4">Account Role</h1>
+                  <div className="text-lg">
+                    Current Role:{" "}
+                    <span className="font-bold capitalize text-red-600">
+                      {role || "Not selected"}
+                    </span>
+                  </div>
+                </div>
+              </UserButton.UserProfilePage>
               <UserButton.MenuItems>
                 <UserButton.Link
                   label="My Jobs"
