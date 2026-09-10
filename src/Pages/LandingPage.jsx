@@ -60,7 +60,6 @@ const LandingPage = () => {
         </Card>
 
         <Accordion
-          multiple
           type="single"
           collapsible
           className="w-full md:col-span-2 mt-16"

@@ -32,7 +32,7 @@ export async function saveJobs(token, { alreadySaved }, saveData) {
     const { data, error: deleteError } = await supabase
       .from("saved_jobs")
       .delete()
-      .eq("job_id", saveData.job_id());
+      .eq("job_id", saveData.job_id);
 
     if (deleteError) {
       console.error("Error deleting saved Jobs:", deleteError);
@@ -143,7 +143,7 @@ export async function deleteJob(token, { job_id }) {
 
   if (deleteError) {
     console.error("Error deleting job:", deleteError);
-    return data;
+    return null;
   }
 
   return data;

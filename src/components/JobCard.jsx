@@ -19,6 +19,7 @@ const JobCard = ({
   isMyJob = false,
   savedInit = false,
   onJobSaved = () => {},
+  onJobAction = () => {},
 }) => {
   const [saved, setSaved] = useState(savedInit);
   const {
@@ -48,9 +49,11 @@ const JobCard = ({
     onJobAction();
   };
 
+  // Use effect to sync saved state when savedJob data changes
+   
   useEffect(() => {
     if (savedJob !== undefined) setSaved(savedJob?.length > 0);
-  }, []);
+  }, [savedJob]);
   return (
     <Card className="flex flex-col">
       {loadingDeleteJob && (

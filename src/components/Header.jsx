@@ -13,7 +13,7 @@ import { Briefcase, BriefcaseBusiness, Heart, PenBox } from "lucide-react";
 import { useEffect } from "react";
 
 const Header = () => {
-  const [search, setSearch] = useSearchParams();
+  const [search] = useSearchParams();
   const { user } = useUser();
   const clerk = useClerk();
 
