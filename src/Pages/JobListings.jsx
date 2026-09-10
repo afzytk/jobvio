@@ -24,7 +24,19 @@ const JobListing = () => {
   const [location, setLocation] = useState("");
   const [company_id, setCompany_id] = useState("");
 
-  const { isLoaded } = useUser();
+  const { isLoaded, user } = useUser();
+
+  // Get candidate's preferred location from user metadata
+  const userLocation = user?.unsafeMetadata?.role === "candidate"
+    ? user?.unsafeMetadata?.location
+    : null;
+
+  // Set default location when user data is loaded
+  useEffect(() => {
+    if (isLoaded && userLocation && !location) {
+      setLocation(userLocation);
+    }
+  }, [isLoaded, userLocation, location]);
   const {
     fn: fnCompanies,
     data: companies,
