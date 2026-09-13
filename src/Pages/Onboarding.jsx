@@ -1,8 +1,8 @@
 import { useUser } from "@clerk/clerk-react";
 import { BarLoader } from "react-spinners";
 import { Button } from "../components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -30,7 +30,7 @@ const Onboarding = () => {
           navigate("/post-job");
         })
         .catch((err) => {
-          console.log("Error updating role:", err);
+          console.error("Error updating role:", err);
         });
     }
     // For candidates, wait for location selection
@@ -53,20 +53,25 @@ const Onboarding = () => {
         navigate("/jobs");
       })
       .catch((err) => {
-        console.log("Error updating profile:", err);
+        console.error("Error updating profile:", err);
       });
   };
 
-  useEffect(() => {
-    if (user?.unsafeMetadata?.role) {
-      navigate(
-        user?.unsafeMetadata?.role === "recruiter" ? "/post-job" : "/jobs",
-      );
-    }
-  });
+  // Render-time redirect: an effect here would paint the onboarding UI
+  // for a frame before navigating (the "flash of onboarding" bug).
+  const existingRole = user?.unsafeMetadata?.role;
 
   if (!isLoaded) {
     return <BarLoader className="mb-4" width={"100%"} color="#36d7b7" />;
+  }
+
+  if (existingRole) {
+    return (
+      <Navigate
+        to={existingRole === "recruiter" ? "/post-job" : "/jobs"}
+        replace
+      />
+    );
   }
 
   return (

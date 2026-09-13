@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import useFetch from "@/hooks/use-fetch";
 import { addNewCompany } from "@/api/apiCompanies";
 import { BarLoader } from "react-spinners";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const schema = z.object({
   name: z.string().min(1, { message: "Company name is required" }),
@@ -31,7 +31,8 @@ const schema = z.object({
     ),
 });
 
-const AddCompanyDrawer = ({ fetchCompanies }) => {
+const AddCompanyDrawer = ({ fetchCompanies, onCompanyAdded }) => {
+  const [open, setOpen] = useState(false);
   const {
     register,
     handleSubmit,
@@ -55,15 +56,29 @@ const AddCompanyDrawer = ({ fetchCompanies }) => {
     });
   };
 
+  // React events bubble through portals, so a drawer submit would also fire
+  // PostJob's form validation. Stop the event before handleSubmit sees it.
+  const submitHandler = (e) => {
+    e.stopPropagation();
+    handleSubmit(onSubmit)(e);
+  };
+
+  // Refresh list, auto-select the new company, close the drawer
   useEffect(() => {
     if (dataAddCompany) {
+      const newCompany = Array.isArray(dataAddCompany)
+        ? dataAddCompany[0]
+        : dataAddCompany;
+
       fetchCompanies();
       reset();
+      onCompanyAdded?.(newCompany);
+      setOpen(false);
     }
-  }, [dataAddCompany, fetchCompanies, reset]);
+  }, [dataAddCompany, fetchCompanies, reset, onCompanyAdded]);
 
   return (
-    <Drawer>
+    <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
         <Button type="button" size="sm" variant="secondary">
           Add Company
@@ -75,7 +90,7 @@ const AddCompanyDrawer = ({ fetchCompanies }) => {
         </DrawerHeader>
         <form
           className="flex flex-col gap-4 p-4"
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={submitHandler}
         >
           <div className="flex flex-col gap-2">
             <Input placeholder="Company name" {...register("name")} />

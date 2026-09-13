@@ -16,9 +16,9 @@ import { Textarea } from "@/components/ui/textarea";
 import useFetch from "@/hooks/use-fetch";
 import { useUser } from "@clerk/clerk-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import MarkdownEditor from "@uiw/react-markdown-editor";
+import LazyMarkdownEditor from "@/components/LazyMarkdownEditor";
 import { State } from "country-state-city";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Navigate, useNavigate } from "react-router-dom";
 import { BarLoader } from "react-spinners";
@@ -40,6 +40,7 @@ const PostJob = () => {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: { location: "", company_id: "", requirements: "" },
@@ -63,7 +64,7 @@ const PostJob = () => {
 
   useEffect(() => {
     if (dataCreateJob?.length > 0) navigate("/jobs");
-  }, [loadingCreateJob]);
+  }, [dataCreateJob, navigate]);
 
   const {
     loading: loadingCompanies,
@@ -75,7 +76,22 @@ const PostJob = () => {
     if (isLoaded) {
       fnCompanies();
     }
-  }, [isLoaded]);
+  }, [isLoaded, fnCompanies]);
+
+  // Stable handler: auto-select the freshly created company in the dropdown.
+  // Only that one field is validated — the rest of the form is left untouched.
+  const handleCompanyAdded = useCallback(
+    (newCompany) => {
+      if (newCompany?.id) {
+        setValue("company_id", String(newCompany.id), {
+          shouldValidate: true,
+          shouldDirty: false,
+          shouldTouch: false,
+        });
+      }
+    },
+    [setValue],
+  );
 
   if (!isLoaded || loadingCompanies) {
     return <BarLoader className="mb-4" width={"100%"} color="#36d7b7" />;
@@ -139,7 +155,7 @@ const PostJob = () => {
                 <SelectContent>
                   <SelectGroup>
                     {companies?.map(({ name, id }) => (
-                      <SelectItem key={name} value={id}>
+                      <SelectItem key={name} value={String(id)}>
                         {name}
                       </SelectItem>
                     ))}
@@ -148,7 +164,10 @@ const PostJob = () => {
               </Select>
             )}
           />
-          <AddCompanyDrawer fetchCompanies={fnCompanies} />
+          <AddCompanyDrawer
+            fetchCompanies={fnCompanies}
+            onCompanyAdded={handleCompanyAdded}
+          />
         </div>
         {errors.location && (
           <p className="text-red-500">{errors.location.message}</p>
@@ -161,14 +180,11 @@ const PostJob = () => {
           name="requirements"
           control={control}
           render={({ field }) => (
-            <MarkdownEditor value={field.value} onChange={field.onChange} />
+            <LazyMarkdownEditor value={field.value} onChange={field.onChange} />
           )}
         />
         {errors.requirements && (
           <p className="text-red-500">{errors.requirements.message}</p>
-        )}
-        {errors.errorCreateJob && (
-          <p className="text-red-500">{errors?.errorCreateJob?.message}</p>
         )}
         {errorCreateJob?.message && (
           <p className="text-red-500">{errorCreateJob?.message}</p>
