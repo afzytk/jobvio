@@ -1,6 +1,11 @@
 import { useSession } from "@clerk/clerk-react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+/**
+ * Hook that wraps an async API call with Clerk auth token handling.
+ * Returns { data, loading, error, fn } where `fn` is stable across renders
+ * (safe to use in useEffect dependency arrays).
+ */
 const useFetch = (cb, options = {}) => {
   const [data, setData] = useState(undefined);
   const [loading, setLoading] = useState(null);
@@ -8,23 +13,39 @@ const useFetch = (cb, options = {}) => {
 
   const { session } = useSession();
 
-  const fn = async (...args) => {
-    setLoading(true);
-    setError(null);
+  // Always read the latest callback/options without invalidating `fn`
+  const cbRef = useRef(cb);
+  const optionsRef = useRef(options);
 
-    try {
-      const supabaseAccessToken = await session.getToken({
-        template: "supabase",
-      });
-      const response = await cb(supabaseAccessToken, options, ...args);
-      setData(response);
+  useEffect(() => {
+    cbRef.current = cb;
+    optionsRef.current = options;
+  });
+
+  const fn = useCallback(
+    async (...args) => {
+      setLoading(true);
       setError(null);
-    } catch (error) {
-      setError(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      try {
+        const supabaseAccessToken = await session?.getToken({
+          template: "supabase",
+        });
+        const response = await cbRef.current(
+          supabaseAccessToken,
+          optionsRef.current,
+          ...args,
+        );
+        setData(response);
+        setError(null);
+      } catch (e) {
+        setError(e);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [session],
+  );
 
   return { data, loading, error, fn };
 };
