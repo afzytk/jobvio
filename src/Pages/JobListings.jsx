@@ -1,11 +1,11 @@
 import { useUser } from "@clerk/clerk-react";
-import { getJobs } from "../api/apiJobs";
-import useFetch from "../hooks/use-fetch";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarLoader } from "react-spinners";
+import { State } from "country-state-city";
+import { getJobs } from "../api/apiJobs";
+import { getExternalJobs } from "../api/apiExternalJobs";
+import useFetch from "../hooks/use-fetch";
 import JobCard from "../components/JobCard";
-import { getCompanies } from "../api/apiCompanies";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,23 +13,22 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { State } from "country-state-city";
 
-const JobListing = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+const JobListings = () => {
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); // applied on submit, not per keystroke
   const [location, setLocation] = useState("");
-  const [company_id, setCompany_id] = useState("");
 
   const { isLoaded, user } = useUser();
 
   // Get candidate's preferred location from user metadata
-  const userLocation = user?.unsafeMetadata?.role === "candidate"
-    ? user?.unsafeMetadata?.location
-    : null;
+  const userLocation =
+    user?.unsafeMetadata?.role === "candidate"
+      ? user?.unsafeMetadata?.location
+      : null;
 
   // Set default location when user data is loaded
   useEffect(() => {
@@ -37,32 +36,58 @@ const JobListing = () => {
       setLocation(userLocation);
     }
   }, [isLoaded, userLocation, location]);
+
   const {
-    fn: fnCompanies,
-    data: companies,
-    loading: loadingJobs,
-  } = useFetch(getCompanies, { location, company_id, searchQuery });
+    fn: fnJobs,
+    data: jobs,
+    loading: loadingInternalJobs,
+  } = useFetch(getJobs, {
+    location,
+    searchQuery,
+  });
 
-  const { fn: fnJobs, data: jobs } = useFetch(getJobs);
+  const {
+    fn: fnExternalJobs,
+    data: externalJobs,
+    loading: loadingExternalJobs,
+  } = useFetch(getExternalJobs, {
+    location,
+  });
 
   useEffect(() => {
-    if (isLoaded) fnCompanies();
-  }, [isLoaded]);
+    if (isLoaded) {
+      fnJobs();
+      fnExternalJobs();
+    }
+  }, [isLoaded, location, searchQuery, fnJobs, fnExternalJobs]);
 
-  useEffect(() => {
-    if (isLoaded) fnJobs();
-  }, [isLoaded, location, company_id, searchQuery]);
+  // External jobs are filtered client-side; internal filtering happens in the query.
+  const allJobs = useMemo(() => {
+    const internalJobs = jobs || [];
+    const external = externalJobs || [];
+
+    const query = searchQuery.toLowerCase();
+    const filteredExternal = query
+      ? external.filter((job) =>
+          job.title.toLowerCase().includes(query),
+        )
+      : external;
+
+    return [...internalJobs, ...filteredExternal].sort((a, b) => {
+      const dateA = new Date(a.posted_date || a.created_at || 0);
+      const dateB = new Date(b.posted_date || b.created_at || 0);
+      return dateB - dateA;
+    });
+  }, [jobs, externalJobs, searchQuery]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    let formData = new FormData(e.target);
-    const query = formData.get("search-query");
-    if (query) setSearchQuery(query);
+    setSearchQuery(searchInput.trim());
   };
 
   const clearFilters = () => {
+    setSearchInput("");
     setSearchQuery("");
-    setCompany_id("");
     setLocation("");
   };
 
@@ -71,7 +96,7 @@ const JobListing = () => {
   }
   return (
     <div>
-      <h1 className="gradient-title font-extrabold text-6xl m:text-7xl text-center pb-8">
+      <h1 className="gradient-title font-extrabold text-6xl md:text-7xl text-center pb-8">
         Latest Jobs
       </h1>
 
@@ -84,6 +109,8 @@ const JobListing = () => {
           type="text"
           placeholder="Search jobs by title"
           name="search-query"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           className="h-full flex-1 px-4 text-md"
         />
         <Button type="submit" className="h-full sm:w-28" variant="blue">
@@ -92,39 +119,17 @@ const JobListing = () => {
       </form>
 
       <div className="flex flex-col sm:flex-row gap-2">
-        <Select value={location} onValueChange={(value) => setLocation(value)}>
+        <Select value={location} onValueChange={setLocation}>
           <SelectTrigger>
             <SelectValue placeholder="Filter by location" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {State.getStatesOfCountry("IN").map(({ name }) => {
-                return (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                );
-              })}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={company_id}
-          onValueChange={(value) => setCompany_id(value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by Company" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {companies?.map(({ name, id }) => {
-                return (
-                  <SelectItem key={name} value={id}>
-                    {name}
-                  </SelectItem>
-                );
-              })}
+              {State.getStatesOfCountry("IN").map(({ name }) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -138,22 +143,21 @@ const JobListing = () => {
         </Button>
       </div>
 
-      {loadingJobs && (
+      {(loadingInternalJobs || loadingExternalJobs) && (
         <BarLoader className="mt-4" width={"100%"} color="#36d7b7" />
       )}
 
-      {loadingJobs === false && (
+      {loadingInternalJobs === false && loadingExternalJobs === false && (
         <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs?.length ? (
-            jobs?.map((job) => {
-              return (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  savedInit={job?.saved?.length > 0}
-                />
-              );
-            })
+          {allJobs.length ? (
+            allJobs.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                savedInit={job?.saved?.length > 0}
+                isExternal={job.external || false}
+              />
+            ))
           ) : (
             <div>No Jobs Found 😢</div>
           )}
@@ -163,4 +167,4 @@ const JobListing = () => {
   );
 };
 
-export default JobListing;
+export default JobListings;

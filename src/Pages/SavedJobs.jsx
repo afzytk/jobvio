@@ -18,7 +18,7 @@ const SavedJobs = () => {
     if (isLoaded) {
       fnSavedJobs();
     }
-  }, [isLoaded]);
+  }, [isLoaded, fnSavedJobs]);
 
   if (!isLoaded || loadingSavedJobs) {
     return <BarLoader className="mb-4" width={"100%"} color="#36d7b7" />;

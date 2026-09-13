@@ -18,7 +18,7 @@ const CreatedJobs = () => {
 
   useEffect(() => {
     fnCreatedJobs();
-  }, []);
+  }, [fnCreatedJobs]);
 
   return (
     <div>
