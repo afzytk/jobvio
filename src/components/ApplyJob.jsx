@@ -62,13 +62,13 @@ const ApplyJobDrawer = ({ job, user, applied = false, fetchJob }) => {
   } = useFetch(applyToJob);
 
   const onSubmit = (data) => {
-    fnApply({
+    return fnApply({
       ...data,
       job_id: job.id,
       candidate_id: user.id,
       name: user.fullName,
       status: "applied",
-      data: data.resume[0],
+      resume: data.resume[0],
     }).then(() => {
       fetchJob();
       reset();

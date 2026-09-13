@@ -11,24 +11,31 @@ import {
 } from "@clerk/clerk-react";
 import { Briefcase, BriefcaseBusiness, Heart, PenBox } from "lucide-react";
 import { useEffect } from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 const Header = () => {
-  const [search] = useSearchParams();
-  const { user } = useUser();
+  const [search, setSearchParams] = useSearchParams();
+  const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
 
   const role = user?.unsafeMetadata?.role;
 
   useEffect(() => {
-    if (search.get("sign-in")) {
+    // Only signed-out users should trigger the modal — Clerk throws
+    // (cannot_render_single_session_enabled) if a signed-in user hits /?sign-in=true.
+    if (search.get("sign-in") && isLoaded && !isSignedIn) {
       clerk.openSignIn();
+      // Strip the trigger param so re-renders don't re-open the modal
+      setSearchParams({}, { replace: true });
     }
-  }, [search, clerk]);
+  }, [search, isLoaded, isSignedIn, clerk, setSearchParams]);
 
   return (
-    <nav className="py-4 flex justify-between items-center">
+    <nav className="py-4 flex justify-between items-center mt-8">
       <Link to="/">
-        <img src="/logo.png" alt="jobvio logo" className="h-36" />
+        <div className="text-4xl font-bold text-foreground tracking-tight ">
+          Job<span className="text-blue-500">vio</span>
+        </div>
       </Link>
 
       <div className="flex gap-8 items-center">
@@ -86,14 +93,17 @@ const Header = () => {
                 labelIcon={<BriefcaseBusiness size={15} />}
                 href="/my-jobs"
               />
-              <UserButton.Link
-                label="Saved Jobs"
-                labelIcon={<Heart size={15} />}
-                href="/saved-jobs"
-              />
+              {role !== "recruiter" && (
+                <UserButton.Link
+                  label="Saved Jobs"
+                  labelIcon={<Heart size={15} />}
+                  href="/saved-jobs"
+                />
+              )}
             </UserButton.MenuItems>
           </UserButton>
         </SignedIn>
+        <ThemeToggle />
       </div>
     </nav>
   );
