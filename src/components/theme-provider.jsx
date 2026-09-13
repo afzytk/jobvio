@@ -1,11 +1,5 @@
-import { createContext, use, useEffect, useState } from "react";
-
-const initialState = {
-  theme: "system",
-  setTheme: () => null,
-};
-
-const ThemeProviderContext = createContext(initialState);
+import { useEffect, useState } from "react";
+import { ThemeProviderContext } from "../context/theme-context";
 
 export function ThemeProvider({
   children,
@@ -13,47 +7,45 @@ export function ThemeProvider({
   storageKey = "vite-ui-theme",
   ...props
 }) {
-  const [theme, setTheme] = useState(
+  const [theme, setThemeState] = useState(
     () => localStorage.getItem(storageKey) || defaultTheme,
   );
+  const [resolvedTheme, setResolvedTheme] = useState("light");
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
+    const apply = () => {
+      const resolved =
+        theme === "system" ? (mediaQuery.matches ? "dark" : "light") : theme;
+      root.classList.remove("light", "dark");
+      root.classList.add(resolved);
+      setResolvedTheme(resolved);
+      return resolved;
+    };
+
+    apply();
+
+    // Follow OS theme changes while "system" is selected
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      root.classList.add(systemTheme);
-      return;
+      mediaQuery.addEventListener("change", apply);
+      return () => mediaQuery.removeEventListener("change", apply);
     }
-
-    root.classList.add(theme);
   }, [theme]);
 
   const value = {
     theme,
-    setTheme: (theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+    resolvedTheme,
+    setTheme: (newTheme) => {
+      localStorage.setItem(storageKey, newTheme);
+      setThemeState(newTheme);
     },
   };
 
   return (
-    <ThemeProviderContext value={value} {...props}>
+    <ThemeProviderContext.Provider value={value} {...props}>
       {children}
-    </ThemeProviderContext>
+    </ThemeProviderContext.Provider>
   );
 }
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const useTheme = () => {
-  const context = use(ThemeProviderContext);
-
-  if (context === undefined)
-    throw new Error("useTheme must be used within a ThemeProvider");
-
-  return context;
-};
