@@ -1,5 +1,6 @@
 import { Button } from "../components/ui/button";
 import { Link } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 import { CompanyCarousel } from "../components/CompanyCarousel";
 import faqs from "../data/faqs.json";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,9 @@ import {
 } from "@/components/ui/accordion";
 
 const LandingPage = () => {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const role = user?.unsafeMetadata?.role;
+
   return (
     <main className="flex flex-col gap-10 sm:gap-20 py-10 sm:py-20">
       {/* Hero Section */}
@@ -18,28 +22,57 @@ const LandingPage = () => {
         <h1 className="flex flex-col items-center justify-center gradient-title text-4xl font-extrabold sm:text-6xl lg:text-8xl tracking-tighter py-4">
           Find Your Dream Job{" "}
         </h1>
-        <p className="text-gray-300 sm:mt-4 text-xs sm:text-xl">
+        <p className="text-muted-foreground sm:mt-4 text-xs sm:text-xl">
           Explore thousands of job listings or find the perfect candidate
         </p>
       </section>
 
-      {/* Action Buttons */}
+      {/* Role-specific CTAs: guests get both, logged-in users get one */}
       <div className="flex gap-6 justify-center">
-        <Link to="/jobs">
-          <Button variant="blue" size="xl">
-            Find Jobs
-          </Button>
-        </Link>
-        <Link to="/post-job">
-          <Button variant="destructive" size="xl">
-            Post Job
-          </Button>
-        </Link>
+        {!isLoaded ? (
+          <>
+            <Button variant="blue" size="xl" className="invisible pointer-events-none">
+              Find Jobs
+            </Button>
+            <Button variant="destructive" size="xl" className="invisible pointer-events-none">
+              Post Job
+            </Button>
+          </>
+        ) : !isSignedIn ? (
+          <>
+            <Link to="/jobs">
+              <Button variant="blue" size="xl">
+                Find Jobs
+              </Button>
+            </Link>
+            <Link to="/post-job">
+              <Button variant="destructive" size="xl">
+                Post Job
+              </Button>
+            </Link>
+          </>
+        ) : (
+          <>
+            {role === "candidate" && (
+              <Link to="/jobs">
+                <Button variant="blue" size="xl">
+                  Find Jobs
+                </Button>
+              </Link>
+            )}
+            {role === "recruiter" && (
+              <Link to="/post-job">
+                <Button variant="destructive" size="xl">
+                  Post Job
+                </Button>
+              </Link>
+            )}
+          </>
+        )}
       </div>
 
-      <CompanyCarousel />
+      {/* Company showcase */}
 
-      {/* Cards and FAQ Section */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
@@ -73,7 +106,7 @@ const LandingPage = () => {
               <AccordionTrigger className="text-md sm:text-xl font-normal">
                 {faq.question}
               </AccordionTrigger>
-              <AccordionContent className="text-base sm:text-lg text-gray-300">
+              <AccordionContent className="text-base sm:text-lg text-muted-foreground">
                 {faq.answer}
               </AccordionContent>
             </AccordionItem>

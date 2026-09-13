@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatDate } from "@/lib/utils";
 
 const ApplicationCard = ({ application, isCandidate = false }) => {
   const handleDownload = () => {
@@ -47,7 +48,7 @@ const ApplicationCard = ({ application, isCandidate = false }) => {
             : application?.name}
           <Download
             size={18}
-            className="bg-white text-black rounded-full h-8 w-8 p-1.5 cursor-pointer"
+            className="bg-secondary text-secondary-foreground rounded-full h-8 w-8 p-1.5 cursor-pointer"
             onClick={handleDownload}
           />
         </CardTitle>
@@ -71,7 +72,7 @@ const ApplicationCard = ({ application, isCandidate = false }) => {
         <hr />
       </CardContent>
       <CardFooter className="flex justify-between">
-        <span>{new Date(application?.createdAt).toLocaleDateString()}</span>
+        <span>Applied on {formatDate(application?.created_at)}</span>
         {isCandidate ? (
           <span className="capitalize font-bold">
             Status: {application?.status}
