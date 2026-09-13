@@ -1,6 +1,6 @@
 import { getSupabaseClient } from "../utils/supabase";
 
-export async function getJobs(token, { location, company_id, searchQuery }) {
+export async function getJobs(token, { location, companyId, searchQuery }) {
   const supabase = await getSupabaseClient(token);
   let query = supabase
     .from("jobs")
@@ -10,8 +10,8 @@ export async function getJobs(token, { location, company_id, searchQuery }) {
     query = query.eq("location", location);
   }
 
-  if (company_id) {
-    query = query.eq("company_id", company_id);
+  if (companyId) {
+    query = query.eq("company_id", Number(companyId));
   }
 
   if (searchQuery) {
